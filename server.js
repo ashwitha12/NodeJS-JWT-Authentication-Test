@@ -1,16 +1,18 @@
 const express = require('express');
 const app = express();
 
+
+const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken'); 
-const {expressjwt:exjwt} = require('express-jwt');
+
 app.use((req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
+    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3001');
     res.setHeader('Access-Control-Allow-Headers', 'Content-type,Authorization');
     next();
 });
-const bodyParser = require('body-parser');
 
 
+const {expressjwt:exjwt} = require('express-jwt');
 const path = require('path');
 
 
@@ -43,27 +45,32 @@ let users = [
 
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
+    let userFound = false; 
     
-    for(let user of users) {
+    for (let user of users) {
         if (username == user.username && password == user.password) {
-            let token = jwt.sign({ id: user.id, username: user.username}, secretKey, { expiresIn: '180s' });
-                res.json({
-                    success: true,
-                    err: null,
-                    token
-                });
-                break;
-         }
-        }
-            res.status(401).json({
-                success: false,
-                token: null,
-                err: 'Username or password is incorrect'
+            let token = jwt.sign({ id: user.id, username: user.username }, secretKey, { expiresIn: '3m' });
+            res.json({
+                success: true,
+                err: null,
+                token
             });
+            userFound = true; 
+            break;
+        }
+    }
     
+    
+    if (!userFound) {
+        res.status(401).json({
+            success: false,
+            token: null,
+            err: 'Your Username or password is incorrect'
+        });
+    }
 });
 
-//protected rout
+//protected route
 app.get('/api/dashboard', jwtMW, (req, res) => {
     res.json({
         success: true,
@@ -71,12 +78,6 @@ app.get('/api/dashboard', jwtMW, (req, res) => {
     });
 });
 
-app.get('/api/prices', jwtMW, (req, res) => {
-    res.json({
-        success: true,
-        myContent: 'this is the price $3.99'
-    });
-});
 
 app.get('/api/settings', jwtMW, (req, res) => {
     res.json({
